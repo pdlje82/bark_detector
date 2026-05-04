@@ -156,14 +156,17 @@ Chunk quiet?                   →  counter -= 1  (min 0)
 counter ≥ min_chunks_above?    →  activity declared, proceed to inference
 ```
 
-With `min_chunks_above: 2`, two consecutive loud 200 ms chunks (400 ms total)
-must be detected before the classifier is invoked.  This prevents ~80 % of
-inference calls during quiet periods, which is critical on the Pi Zero 2W's
-limited CPU.
+With `min_chunks_above: 1` (current setting), one loud 100 ms chunk is enough
+to trigger inference.  This minimises latency but removes the transient-spike
+filter — a single loud non-bark sound (door slam, dropped object) can now reach
+the classifier.  The raised `confidence_threshold: 0.85` compensates for this.
 
-**Effect on latency:** The VAD adds a minimum of 400 ms from the start of the
-bark before inference can begin.  This is the largest single contributor to
-first-detection latency.
+With `min_chunks_above: 2` and `chunk_ms: 200` (original defaults), two
+consecutive loud chunks (400 ms total) were required, filtering most transients
+at the cost of higher latency.
+
+**Effect on latency:** With current settings the VAD adds a minimum of 100 ms
+from the start of the bark before inference can begin.
 
 ---
 
@@ -181,6 +184,56 @@ context  = buffered[-15360:]                  # last 0.96 s
 If the buffer is not yet full (first few seconds after startup), the beginning
 is zero-padded.  Zero-padding introduces mild classification noise at startup
 but does not affect steady-state operation.
+
+### The 0.96 s window does not add latency — but it does affect confidence
+
+A common misconception is that the 0.96-second window forces the detector to
+wait 960 ms before it can classify.  **This is not the case.**  The ring buffer
+is filled continuously while the detector runs, so by the time a bark happens
+the buffer already contains ~1 second of pre-bark audio.  The window is
+assembled instantly from that historical data — it costs zero extra latency.
+
+What the window *does* affect is **how much of the input actually contains bark
+audio** on the first detection attempt:
+
+```
+First detection (100 ms after bark starts, with current settings):
+
+|←──────── 860 ms of pre-bark silence/ambient noise ────────→|← 100 ms bark →|
+ ────────────────────────────────────────────────────────────────────────────
+                           0.96 s YAMNet input
+```
+
+Only ~10 % of the window is bark at this point.  YAMNet was trained on
+AudioSet clips where the target sound typically fills the majority of the clip,
+so a bark buried in 860 ms of silence may produce a **lower confidence score**
+than the same bark heard on the second or third chunk, when it occupies a
+larger fraction of the window:
+
+```
+Second detection attempt (200 ms after bark starts):
+
+|←── 760 ms ambient ──→|←──────── 200 ms of bark ────────→|
+ ─────────────────────────────────────────────────────────
+                    0.96 s YAMNet input  (bark = ~21 %)
+
+Third detection attempt (300 ms after bark starts):
+
+|←── 660 ms ambient ──→|←──────── 300 ms of bark ────────→|
+ ─────────────────────────────────────────────────────────
+                    0.96 s YAMNet input  (bark = ~31 %)
+```
+
+**Practical consequence:** For short or quiet barks, the very first inference
+(at 100 ms) may score below `confidence_threshold` and be missed, with the
+actual detection firing on the 2nd or 3rd chunk (200–300 ms after the bark
+starts).  For loud or sustained barks — the typical case with a dog barking
+repeatedly — the first inference is usually sufficient.
+
+**The only structural fix** would be to replace YAMNet with a model designed
+for shorter input windows (e.g. 100–200 ms), which would require retraining or
+finding an alternative pre-trained model.  For the current use case this
+trade-off is acceptable.
 
 ---
 
