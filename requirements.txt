@@ -1,0 +1,19 @@
+# requirements.txt — Python dependencies for the Bark Detector
+#
+# Install inside the virtual environment:
+#   source ~/bark_env/bin/activate
+#   pip install -r requirements.txt
+#
+# Notes:
+#   - tflite-runtime is the lightweight TFLite-only package for ARM (Pi Zero 2W).
+#     Do NOT use the full `tensorflow` package — it is too large for the Pi's RAM.
+#   - redis is only required if you use the Upstash real-time config feature.
+#     The detector falls back gracefully if Redis is unavailable.
+
+pyaudio>=0.2.13          # PyAudio — Python bindings for PortAudio
+numpy>=1.24              # Fast array operations for audio processing
+scipy>=1.10              # FFT for spectral band feature extraction
+tflite-runtime>=2.14     # Lightweight TFLite inference (ARM-optimised)
+influxdb-client>=1.36    # InfluxDB Cloud v2 Python client
+redis>=5.0               # Upstash Redis client for real-time config updates
+requests>=2.31           # HTTP client (used for optional Telegram notifications)

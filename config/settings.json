@@ -1,0 +1,34 @@
+{
+  "audio": {
+    "device_index": 1,
+    "sample_rate": 16000,
+    "channels": 1,
+    "chunk_ms": 100,
+    "format": "int16"
+  },
+  "vad": {
+    "rms_threshold": 0.015,
+    "min_chunks_above": 1
+  },
+  "classifier": {
+    "model_path": "models/yamnet.tflite",
+    "bark_class_index": 74,
+    "confidence_threshold": 0.85,
+    "debounce_seconds": 1.5
+  },
+  "influxdb": {
+    "url": "https://eu-central-1-1.aws.cloud2.influxdata.com",
+    "token": "YOUR_TOKEN_HERE",
+    "org": "YOUR_ORG_HERE",
+    "bucket": "barks"
+  },
+  "redis": {
+    "url": "rediss://eu1-xxx.upstash.io:6380",
+    "password": "YOUR_REDIS_PASSWORD_HERE"
+  },
+  "logging": {
+    "snippet_duration_s": 2.0,
+    "max_snippets": 500,
+    "local_csv_backup": true
+  }
+}
