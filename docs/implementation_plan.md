@@ -79,24 +79,25 @@ ctl.!default {
 
 ---
 
-## Phase 2 — Clone the Repo and Set Up Python Environment
+## Phase 2 — Set Up Python Environment
 
 ```bash
 cd ~
-git clone https://github.com/pdlje82/bark_detector.git bark_detector
-cd bark_detector
-
 python3 -m venv bark_env
 source bark_env/bin/activate
 
 pip install --upgrade pip
-pip install -r requirements.txt
+pip install pyaudio numpy scipy
+pip install tflite-runtime          # YAMNet inference
+pip install influxdb-client         # InfluxDB Cloud
+pip install redis                   # Upstash Redis (real-time config)
+pip install requests                # Telegram notifications (optional)
 ```
 
 ### Download YAMNet TFLite Model
 ```bash
-mkdir -p models
-cd models
+mkdir -p ~/bark_detector/models
+cd ~/bark_detector/models
 
 # YAMNet from TensorFlow Hub (TFLite version)
 wget https://storage.googleapis.com/download.tensorflow.org/models/tflite/task_library/audio_classification/rpi/lite-model_yamnet_tflite_1.tflite \
@@ -112,7 +113,7 @@ wget https://raw.githubusercontent.com/tensorflow/models/master/research/audiose
 ## Phase 3 — Project Structure
 
 ```bash
-mkdir -p models logs snippets config
+mkdir -p ~/bark_detector/{models,logs,snippets,config}
 cd ~/bark_detector
 ```
 
