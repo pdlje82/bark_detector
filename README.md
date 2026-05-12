@@ -39,7 +39,7 @@ bark_detector/
 ├── influx_logger.py        InfluxDB Cloud writer + CSV fallback
 ├── redis_config.py         Real-time config polling via Upstash Redis
 ├── install.sh              One-shot setup script for the Pi
-├── requirements.txt        Python dependencies
+├── environment.yml         Conda environment definition
 ├── bark-detector.service   systemd unit file
 ├── config/
 │   └── settings.json       All tuneable parameters and credentials
@@ -77,7 +77,8 @@ cd ~/bark_detector
 bash install.sh
 ```
 
-The script installs system packages, creates a virtualenv at `~/bark_env`,
+The script installs system packages, installs Miniconda at `~/miniconda3`,
+creates the `bark-detector` Conda environment from `environment.yml`,
 downloads the YAMNet model, and writes a template `config/settings.json`.
 
 ### 4. Verify the audio interface
@@ -114,7 +115,8 @@ you chose a different region.
 ### 6. Run the detector
 
 ```bash
-source ~/bark_env/bin/activate
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate bark-detector
 python bark_detector.py
 ```
 
@@ -235,6 +237,27 @@ wc -l logs/bark_events.csv
 
 # List recent audio snippets
 ls -lth snippets/ | head -20
+```
+
+## Conda Environment
+
+This project now uses **Miniconda** rather than a Python virtual environment.
+The environment definition lives in `environment.yml`, and `install.sh`
+installs or updates the `bark-detector` environment automatically.
+
+Manual environment setup looks like this:
+
+```bash
+source ~/miniconda3/etc/profile.d/conda.sh
+conda env create -f environment.yml
+conda activate bark-detector
+```
+
+If the environment already exists, update it with:
+
+```bash
+source ~/miniconda3/etc/profile.d/conda.sh
+conda env update -n bark-detector -f environment.yml --prune
 ```
 
 ---

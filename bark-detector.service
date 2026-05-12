@@ -22,10 +22,10 @@ Type=simple
 User=pi
 # All relative paths in the Python code resolve from here
 WorkingDirectory=/home/pi/bark_detector
-# Make sure the virtual environment's Python and pip are on the PATH
-Environment=PATH=/home/pi/bark_env/bin:/usr/bin:/bin
-# Start command — uses the venv Python explicitly for clarity
-ExecStart=/home/pi/bark_env/bin/python bark_detector.py
+# Make sure the Conda environment's Python is available to the service
+Environment=PATH=/home/pi/miniconda3/envs/bark-detector/bin:/home/pi/miniconda3/bin:/usr/bin:/bin
+# Start command — uses the Conda environment's Python explicitly for clarity
+ExecStart=/home/pi/miniconda3/envs/bark-detector/bin/python bark_detector.py
 # Restart automatically if the process crashes (e.g. USB disconnect)
 Restart=always
 # Wait 10 seconds before each restart attempt to avoid a tight crash loop
