@@ -90,6 +90,18 @@ arecord -l
 If the UM2 shows up on a different card number, update `audio.device_index`
 in `config/settings.json`.
 
+Some USB microphones and USB audio codecs do not natively capture at `16000 Hz`
+even though YAMNet requires a 16 kHz input.  If a raw hardware test such as
+`arecord -D hw:1,0 -f S16_LE -r 16000 -c 1 test.wav` warns that the device is
+actually running at `44100 Hz`, retry with the ALSA plug layer instead:
+
+```bash
+arecord -D plughw:1,0 -f S16_LE -r 16000 -c 1 -d 5 test.wav
+```
+
+`plughw` enables software sample-rate conversion, which is often required for
+USB microphones based on fixed-rate codecs.
+
 ### 5. Enter your InfluxDB credentials
 
 ```bash

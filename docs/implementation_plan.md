@@ -53,6 +53,15 @@ aplay test.wav
 arecord -D hw:1,0 -f S16_LE -r 16000 -c 1 -vv /dev/null
 ```
 
+If the raw `hw:1,0` device warns that the requested `16000 Hz` rate was mapped
+to a native hardware rate such as `44100 Hz`, switch the verification command
+to `plughw:1,0` instead.  Some USB microphones only expose fixed sample rates,
+and `plughw` lets ALSA insert the required software conversion:
+
+```bash
+arecord -D plughw:1,0 -f S16_LE -r 16000 -c 1 -d 5 test.wav
+```
+
 ### ALSA Configuration (set UM2 as default device)
 ```bash
 sudo nano /etc/asound.conf
