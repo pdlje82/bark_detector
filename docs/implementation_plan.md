@@ -32,8 +32,8 @@ ssh pi@<IP-address>  # look up IP in your router
 ### 0.3 Update the System
 ```bash
 sudo apt update && sudo apt upgrade -y
-sudo apt install -y git portaudio19-dev python3-dev libasound2-dev \
-                    alsa-utils wget bzip2
+sudo apt install -y git python3-pip python3-venv portaudio19-dev \
+                    python3-dev libasound2-dev alsa-utils
 ```
 
 ---
@@ -79,23 +79,19 @@ ctl.!default {
 
 ---
 
-## Phase 2 — Set Up Miniconda Environment
+## Phase 2 — Set Up Python Environment
 
 ```bash
 cd ~
-wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh \
-     -O /tmp/miniconda.sh
-bash /tmp/miniconda.sh -b -p "$HOME/miniconda3"
-source "$HOME/miniconda3/etc/profile.d/conda.sh"
-conda env create -f ~/bark_detector/environment.yml
-conda activate bark-detector
-```
+python3 -m venv bark_env
+source bark_env/bin/activate
 
-To update an existing environment after dependency changes:
-
-```bash
-source "$HOME/miniconda3/etc/profile.d/conda.sh"
-conda env update -n bark-detector -f ~/bark_detector/environment.yml --prune
+pip install --upgrade pip
+pip install pyaudio numpy scipy
+pip install tflite-runtime          # YAMNet inference
+pip install influxdb-client         # InfluxDB Cloud
+pip install redis                   # Upstash Redis (real-time config)
+pip install requests                # Telegram notifications (optional)
 ```
 
 ### Download YAMNet TFLite Model
@@ -126,7 +122,6 @@ bark_detector/
 ├── models/
 │   ├── yamnet.tflite
 │   └── yamnet_classes.csv
-├── environment.yml          ← Conda environment definition
 ├── config/
 │   └── settings.json          ← local configuration
 ├── logs/                      ← local CSV backups
@@ -183,8 +178,8 @@ Wants=network-online.target
 Type=simple
 User=pi
 WorkingDirectory=/home/pi/bark_detector
-Environment=PATH=/home/pi/miniconda3/envs/bark-detector/bin:/home/pi/miniconda3/bin:/usr/bin:/bin
-ExecStart=/home/pi/miniconda3/envs/bark-detector/bin/python bark_detector.py
+Environment=PATH=/home/pi/bark_env/bin:/usr/bin:/bin
+ExecStart=/home/pi/bark_env/bin/python bark_detector.py
 Restart=always
 RestartSec=10
 StandardOutput=journal
@@ -230,7 +225,7 @@ nano ~/bark_detector/config/settings.json
 
 ### 6.4 Test the Connection
 ```bash
-cd ~/bark_detector && source ~/miniconda3/etc/profile.d/conda.sh && conda activate bark-detector
+cd ~/bark_detector && source ~/bark_env/bin/activate
 python -c "
 from influxdb_client import InfluxDBClient
 import json

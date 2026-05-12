@@ -5,9 +5,9 @@
 #   bash install.sh
 #
 # What this script does:
-#   1. Installs required system packages (PortAudio, ALSA, wget, bzip2).
-#   2. Installs Miniconda at ~/miniconda3 if it is not already present.
-#   3. Creates or updates the Conda environment from environment.yml.
+#   1. Installs required system packages (portaudio, alsa, python3-venv).
+#   2. Creates a Python virtual environment at ~/bark_env.
+#   3. Installs all Python dependencies into the virtual environment.
 #   4. Downloads the YAMNet TFLite model and class labels into models/.
 #   5. Creates the required directory structure (logs, snippets, config).
 #   6. Writes a template config/settings.json if one does not already exist.
@@ -38,55 +38,45 @@ info "Updating package lists and installing system dependencies..."
 sudo apt update -q
 sudo apt install -y \
     git \
+    python3-pip \
+    python3-venv \
     portaudio19-dev \
     python3-dev \
     libasound2-dev \
-    alsa-utils \
-    wget \
-    bzip2
+    alsa-utils
 
 # ---------------------------------------------------------------------------
-# 2. Miniconda installation
+# 2. Python virtual environment
 # ---------------------------------------------------------------------------
-CONDA_DIR="$HOME/miniconda3"
-CONDA_BIN="$CONDA_DIR/bin/conda"
-MINICONDA_INSTALLER="/tmp/miniconda.sh"
-MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-aarch64.sh"
+VENV_DIR="$HOME/bark_env"
 
-if [ -x "$CONDA_BIN" ]; then
-    warning "Miniconda already exists at $CONDA_DIR — skipping installer download."
+if [ -d "$VENV_DIR" ]; then
+    warning "Virtual environment already exists at $VENV_DIR — skipping creation."
 else
-    info "Downloading Miniconda installer..."
-    wget -q --show-progress "$MINICONDA_URL" -O "$MINICONDA_INSTALLER"
-
-    info "Installing Miniconda to $CONDA_DIR..."
-    bash "$MINICONDA_INSTALLER" -b -p "$CONDA_DIR"
+    info "Creating Python virtual environment at $VENV_DIR..."
+    python3 -m venv "$VENV_DIR"
 fi
 
-# Load Conda into this shell
+# Activate the virtual environment for the remainder of this script
 # shellcheck source=/dev/null
-source "$CONDA_DIR/etc/profile.d/conda.sh"
+source "$VENV_DIR/bin/activate"
 
 # ---------------------------------------------------------------------------
-# 3. Conda environment
+# 3. Python dependencies
 # ---------------------------------------------------------------------------
-ENV_NAME="bark-detector"
-ENV_FILE="environment.yml"
+info "Installing Python packages..."
+pip install --upgrade pip --quiet
 
-if [ ! -f "$ENV_FILE" ]; then
-    error "Missing $ENV_FILE in $(pwd)"
-    exit 1
-fi
+pip install \
+    pyaudio \
+    numpy \
+    scipy \
+    tflite-runtime \
+    influxdb-client \
+    redis \
+    requests
 
-if "$CONDA_BIN" env list | awk '{print $1}' | grep -qx "$ENV_NAME"; then
-    info "Updating existing Conda environment: $ENV_NAME"
-    "$CONDA_BIN" env update -n "$ENV_NAME" -f "$ENV_FILE" --prune
-else
-    info "Creating Conda environment: $ENV_NAME"
-    "$CONDA_BIN" env create -f "$ENV_FILE"
-fi
-
-info "Conda environment ready."
+info "Python packages installed."
 
 # ---------------------------------------------------------------------------
 # 4. YAMNet model download
@@ -188,12 +178,9 @@ echo ""
 echo "  3. Test a 5-second recording:"
 echo "       arecord -D hw:1,0 -f S16_LE -r 16000 -c 1 -d 5 /tmp/test.wav"
 echo "       aplay /tmp/test.wav"
-echo "     If the device warns that it is really recording at 44100 Hz, retry with:"
-echo "       arecord -D plughw:1,0 -f S16_LE -r 16000 -c 1 -d 5 /tmp/test.wav"
 echo ""
 echo "  4. Run the detector:"
-echo "       source ~/miniconda3/etc/profile.d/conda.sh"
-echo "       conda activate bark-detector"
+echo "       source ~/bark_env/bin/activate"
 echo "       python bark_detector.py"
 echo ""
 echo "  5. (Optional) Install as a systemd service:"
